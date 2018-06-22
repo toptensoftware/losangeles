@@ -10,7 +10,7 @@ var lessMiddleware = require('less-middleware');
 var fs = require('fs');
 
 // Work out the content root
-var contentRoot = process.env.LOSANGELES_CONTENT_ROOT || __dirname;
+var contentRoot = process.env.LOSANGELES_CONTENT_ROOT || process.cwd();
 var publicRoot = path.join(contentRoot, 'public');
 
 // Read hooks file
