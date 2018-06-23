@@ -2,6 +2,7 @@
   "name": "losangeles",
   "version": "1.0.0",
   "description": "Simple page content server",
+	"main": "losangeles.js",
   "scripts": {
       "start": "node ./bin/www",
       "test": "echo \"Error: no test specified\" && exit 1"
