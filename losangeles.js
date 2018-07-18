@@ -643,6 +643,13 @@ function pageServer(options, req, res, next)
 		return;
 	}
 
+	// Clean up multiple slashes in path
+	var cleanupSlashes = req.url.replace(/\/\/+/gi, "/");
+	if (cleanupSlashes != req.url)
+	{
+		return res.redirect(cleanupSlashes)
+	}
+
 	Promise.resolve(async function(){
 
 		try
