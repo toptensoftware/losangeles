@@ -7,8 +7,8 @@ var readImageSize = require('image-size');
 var debug = require('debug')('pageServer');
 var debugRedirect = require('debug')('pageServer.redirect');
 var highlight = require('highlight.js');
-var prettyjson = require('prettyjson');
 var got = require('got');
+var request = require('request');
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 // parsePage(Sync|Async) - read a .page file and parse the yaml/json off the top (async version)
@@ -732,6 +732,11 @@ function urlRulesFilter(rules, req, res, next)
 				if (rule.redirect)
 				{
 					res.redirect(newUrl);
+					return;
+				}
+				else if (rule.proxy)
+				{
+					request(newUrl).pipe(res);
 					return;
 				}
 
