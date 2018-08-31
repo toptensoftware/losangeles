@@ -711,7 +711,7 @@ function urlRulesFilter(rules, req, res, next)
 	{
 		var rule = rules[i];
 
-		var rx = rule.redirect ? rule.redirect : rule.rewrite;
+		var rx = rule.redirect || rule.rewrite || rule.proxy;
 
 		// If the rule contains "://" also include the protocol and hostname is the test string
 		if (rule.redirect && rx.toString().indexOf(":\\/\\/")>=0)
