@@ -398,6 +398,7 @@ function adornPageObject(page, options, url, filename)
 					fullpath: path.join(options.contentPath, filename),
 					url: url,
 					defaultSyntax: page.defaultSyntax,
+					noHighlight: options.noHighlight === undefined ? false : options.noHighlight,
 				};
 				this.body = mdd.Transform(page.rawBody);
 				g_markdownData = null;
@@ -810,8 +811,19 @@ function HtmlEncode(str)
 	});
 }
 
+mdd.FormatCodeBlockAttributes = function onFormatCodeBlock(opts)
+{
+	if (g_markdownData.defaultSyntax == "disabled" || g_markdownData.noHighlight)
+		return " class=\"language-" + opts.language + "\"";
+	else
+		return "";
+}
+
 mdd.FormatCodeBlock = function onFormatCodeBlock(code, data, language)
 {
+	if (g_markdownData.defaultSyntax == "disabled" || g_markdownData.noHighlight)
+		return HtmlEncode(code);
+
 	var language = language ? language : g_markdownData.defaultSyntax;
 
 	if (!language)
