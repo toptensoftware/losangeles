@@ -11,28 +11,16 @@ var got = require('got');
 var request = require('request');
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-// parsePage(Sync|Async) - read a .page file and parse the yaml/json off the top (async version)
+// parsePage - read a .page file and parse the yaml/json off the top (async version)
 // 
-// These functions parse a page file but don't handle imports or .common.page merging
+// This function parse a page file but don't handle imports or .common.page merging
 
 // Helper to parse a page file and 
 async function parsePageAsync(filename) 
 {
 	// Read the file
 	var data = await util.promisify(fs.readFile)(filename, 'utf8');
-	return parsePage(filename, data);
-}
 
-// Helper to parse a page file and strip the yaml/json off the top (sync version)
-function parsePageSync(filename)
-{
-	var data = fs.readFileSync(filename, 'utf8');
-	return parsePage(filename, data);
-}
-
-// Helper to parse page data and strip the yaml/json off the top
-function parsePage(filename, data)
-{
 	// Setup the page object
 	var page = {
 		filename: filename,
@@ -124,7 +112,7 @@ function parsePage(filename, data)
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-// readPageFile(Sync/Async) - read a .page file and merge imports and .common.page
+// readPageFileAsync - read a .page file and merge imports and .common.page
 
 // Load a page file and merge with imported base pages (async version)
 async function readPageFileAsync(options, filename)
@@ -198,80 +186,9 @@ async function readPageFileAsync(options, filename)
 	return mergedPage;
 }
 
-// Load a page file and merge with imported base pages (sync version)
-function readPageFileSync(options, filename)
-{
-	// Read and parse the file
-	var page = parsePageSync(filename);
-
-	var imports = []
-
-	// Try to automatically include .common.page
-	if (!filename.endsWith(".common.page"))
-	{
-		try
-		{
-			var stats = fs.lstatSync(path.join(path.dirname(filename), ".common.page"));
-			if (stats.isFile())
-				imports.push(".common.page");
-		}
-		catch (x)
-		{
-			// doesn't exist
-		}
-	}
-
-	// Append page imports
-	if (page.import)
-	{
-		if (Array.isArray(page.import))
-		{
-			imports = imports.concat(page.import);
-		}
-		else
-		{
-			imports.push(page.import);
-		}
-		delete page.import;
-	}
-
-	// Quit early if no imports
-	if (imports.length == 0)
-		return page;
-
-	// Merge with base page?
-	var mergedPage;
-	for (var i=0; i<imports.length; i++)
-	{
-		var importName = imports[i];
-
-		var importFile;
-		if (importName[0]=='/')
-		{
-			importFile = path.join(options.contentPath, importName.substr(1));
-		}
-		else
-		{
-			importFile = path.join(path.dirname(filename), importName);
-		}
-
-		var importedPage = readPageFileSync(options, importFile);
-
-		// Merge pages
-		if (i == 0)
-			mergedPage = importedPage;
-		else
-			merge(mergedPage, importedPage);
-	}
-
-	// Move the top level page
-	merge(mergedPage, page);
-
-	return mergedPage;
-}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-// mapUrlToFile(Sync/Async) - given a URL, work out the page file that serves it
+// mapUrlToFileAsync - given a URL, work out the page file that serves it
 
 async function mapUrlToFileAsync(options, url)
 {
@@ -285,26 +202,8 @@ async function mapUrlToFileAsync(options, url)
 	{
 	}
 
-	return mapUrlToFile(options, url, stats && stats.isDirectory());
-}
+	var isDirectory = stats && stats.isDirectory();
 
-function mapUrlToFileSync(options, url)
-{
-	// Is it a directory or file?
-	var stats;
-	try
-	{
-		stats = fs.lstatSync(path.join(options.contentPath, url));
-	}
-	catch (x)
-	{
-	}
-
-	return mapUrlToFile(options, url, stats && stats.isDirectory());
-}
-
-function mapUrlToFile(options, url, isDirectory)
-{
 	var file = url;
 
 	if (isDirectory)
@@ -327,7 +226,7 @@ function mapUrlToFile(options, url, isDirectory)
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-// loadPageByUrl(Sync/Async) - map url to file, load the file and setup references and adornments
+// loadPageByUrlAsync - map url to file, load the file
 
 async function loadPageByUrlAsync(options, cache, url)
 {
@@ -349,25 +248,6 @@ async function loadPageByUrlAsync(options, cache, url)
 	return adornPageObject(page, options, url, filename);
 }
 
-function loadPageByUrlSync(options, cache, url)
-{
-	// Work out the file name
-	var filename;
-	[filename, url] = mapUrlToFileSync(options, url);
-
-	// Already loaded?
-	if (cache[url])
-		return cache[url];
-
-	// Read the page file
-	var page = readPageFileSync(options, path.join(options.contentPath, filename));
-
-	// Cache it
-	cache[url] = page;
-
-	// Add adornments
-	return adornPageObject(page, options, url, filename);
-}
 
 function adornPageObject(page, options, url, filename)
 {
@@ -398,6 +278,7 @@ function adornPageObject(page, options, url, filename)
 					fullpath: path.join(options.contentPath, filename),
 					url: url,
 					defaultSyntax: page.defaultSyntax,
+					remapLanguages: page.remapLanguages,
 					noHighlight: options.noHighlight === undefined ? false : options.noHighlight,
 				};
 				this.body = mdd.Transform(page.rawBody);
@@ -413,30 +294,6 @@ function adornPageObject(page, options, url, filename)
 	// Helper functions
 	page.qualifyUrl = page_qualifyUrl;
 
-	// Helper properties
-	Object.defineProperty(page, "nextPage", {
-		get: function() {
-			return page_findNextPage(this, 1);
-		},
-		enumerable: true,
-		configurable: true,
-	});
-	Object.defineProperty(page, "previousPage", {
-		get: function() {
-			return page_findNextPage(this, -1);
-		},
-		enumerable: true,
-		configurable: true,
-	});
-
-	// Resolve references
-	page.$refList = [];
-	page.$refCache = {};
-	if (page.references)
-	{
-		resolveReferences(options, page, page.references, page)
-	}
-
 	// Return the page
 	return page;
 }
@@ -446,165 +303,9 @@ function page_qualifyUrl(url)
 	return resolveRelativeUrl(this.url, url);
 }
 
-function page_findNextPage(page, direction)
-{
-	// Get the sequence, quit if none
-	var seq = page.sequence;
-	if (!seq)
-		return null;
-
-	// Find index to self, quit if not found
-	var index = seq.findIndex((elem) => elem.url == page.url);
-	if (index < 0)
-		return null;
-
-	// Move, quit if out of range
-	index += direction;
-	if (index < 0 || index >= seq.length)
-		return null;
-
-	// return the page
-	return seq[index];
-}
-
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-// Referenced Page Handling
-
-function updateRefList(page, value)
-{
-	// String - just add it as referenced page
-	if (typeof(value) === "string")
-	{
-		page.$refList.push(value);
-		return;
-	}
-
-	// Recursively add elements
-	if (Array.isArray(value))
-	{
-		for (var i=0; i<value.length; i++)
-			updateRefList(page, value[i]);
-		return;
-	}
-
-	// Recursiively add elements
-	if (isObject(value))
-	{
-		for (var k of Object.keys(value))
-		{
-			updateRefList(page, value[k]);
-		}
-	}
-}
-
-function buildReferences(options, page, value)
-{
-	// String - just add it as referenced page
-	if (typeof(value) === "string")
-	{
-		return loadPageByUrlSync(options, page.$refCache, resolveRelativeUrl(page.url,  value));
-	}
-
-	if (Array.isArray(value))
-	{
-		var retVal = [];
-		for (var j=0; j<value.length; j++)
-		{
-			retVal.push(buildReferences(options, page, value[j]));
-		}
-		return retVal;
-	}
-
-	// Recursiively add elements
-	if (isObject(value))
-	{
-		var retVal = {};
-		for (var k of Object.keys(value))
-		{
-			retVal[k] = buildReferences(options, page, value[k]);
-		}
-		return retVal;
-	}
-
-	return value;
-}
-
-function resolveReferences(options, page, references, target)
-{
-	var keys = Object.keys(references);
-	for (var i=0; i<keys.length; i++)
-	{
-		var key = keys[i];
-
-		// Page reference?
-		if (typeof(references[key]) === "string")
-		{
-			(function(){
-				var pageUrl = references[key];
-
-				// Put it in the list of referenced page URLS
-				updateRefList(page, pageUrl);
-
-				Object.defineProperty(target, key, {
-					get: function()
-					{
-						return buildReferences(options, page, pageUrl);
-					},
-					enumerable: true,
-					configurable: true,
-				});
-			})();
-
-			continue;
-		}
-
-		// Array of page references?
-		if (Array.isArray(references[key]))
-		{
-			(function() {
-				var elems = references[key];
-				var prop = key;
-
-				// Put it in the list of referenced page URLS
-				updateRefList(page, elems);
-
-				Object.defineProperty(target, key, {
-					get: function()
-					{
-						return buildReferences(options, page, elems);
-					},
-					enumerable: true,
-					configurable: true,
-				});
-			})();
-			
-		
-			continue;
-		}
-
-		// Nested object map, recurse...
-		if (isObject(references[key]))
-		{
-			if (target[key] === undefined)
-				target[key] = {};
-			resolveReferences(options, page, references[key], target[key]);
-		}
-	}
-}
-
-async function cacheImmediateReferences(options, page)
-{
-	// Any references?
-	if (!page.$refList)
-		return;
-
-	// Cache them
-	for (var i=0; i<page.$refList.length; i++)
-	{
-		await loadPageByUrlAsync(options, page.$refCache, resolveRelativeUrl(page.url, page.$refList[i]));
-	}
-}
+// Root Page Load
 
 async function loadRootPage(options, url)
 {
@@ -625,15 +326,12 @@ async function loadRootPage(options, url)
 		page.$externalBodyFeteched = true;
 	}
 
-	page.$refCache = cache;
-	await cacheImmediateReferences(options, page);
 	return page;
 }
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 // Page Server
-
 
 function pageServer(options, req, res, next)
 {
@@ -816,6 +514,12 @@ mdd.FormatCodeBlockAttributes = function onFormatCodeBlock(opts)
 	if (g_markdownData.defaultSyntax == "disabled" || g_markdownData.noHighlight)
 	{
 		var language = opts.language || g_markdownData.defaultSyntax || "txt";
+
+		if (g_markdownData.remapLanguages && g_markdownData.remapLanguages[language])
+		{
+			language = g_markdownData.remapLanguages[language];
+		}
+
 		return " class=\"language-" + language + "\"";
 	}
 	else
