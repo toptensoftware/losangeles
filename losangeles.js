@@ -814,7 +814,10 @@ function HtmlEncode(str)
 mdd.FormatCodeBlockAttributes = function onFormatCodeBlock(opts)
 {
 	if (g_markdownData.defaultSyntax == "disabled" || g_markdownData.noHighlight)
-		return " class=\"language-" + opts.language + "\"";
+	{
+		var language = opts.language || g_markdownData.defaultSyntax;
+		return " class=\"language-" + language + "\"";
+	}
 	else
 		return "";
 }
