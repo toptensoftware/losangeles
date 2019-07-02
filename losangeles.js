@@ -815,7 +815,7 @@ mdd.FormatCodeBlockAttributes = function onFormatCodeBlock(opts)
 {
 	if (g_markdownData.defaultSyntax == "disabled" || g_markdownData.noHighlight)
 	{
-		var language = opts.language || g_markdownData.defaultSyntax;
+		var language = opts.language || g_markdownData.defaultSyntax || "txt";
 		return " class=\"language-" + language + "\"";
 	}
 	else
