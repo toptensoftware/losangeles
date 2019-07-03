@@ -1,3 +1,6 @@
+/////////////////////////////////////////////////////////////////////////////////////////////////
+// losangeles.js - simple markdown page server
+
 var fs = require('fs');
 var util = require('util');
 var path = require('path');
