@@ -199,7 +199,7 @@ async function mapUrlToFileAsync(options, url)
 	var stats;
 	try
 	{
-		stats = await util.promisify(fs.lstat)(path.join(options.contentPath, url));
+		stats = await util.promisify(fs.stat)(path.join(options.contentPath, url));
 	}
 	catch (x)
 	{
@@ -216,11 +216,15 @@ async function mapUrlToFileAsync(options, url)
 			url += '/';
 			file += '/';
 		}
-		file += "index.page";
+		file += "index";
+	}
+
+	if (await util.promisify(fs.exists)(path.join(options.contentPath, file + ".md")))
+	{
+		file += ".md";
 	}
 	else
 	{
-		// Otherwise look for a page file
 		file += ".page";
 	}
 
