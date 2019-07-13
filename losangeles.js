@@ -266,37 +266,44 @@ function adornPageObject(page, options, url, filename)
 	if (page.view === undefined)
 		page.view = "page"
 
-	// Delayed html rendering
-	Object.defineProperty(page, 'body', {
-		get: function() {
+	if (page.isMarkdown === false)
+	{
+		page.body = page.rawBody;
+	}
+	else
+	{
+		// Delayed html rendering
+		Object.defineProperty(page, 'body', {
+			get: function() {
 
-			// Remove this property
-			delete this.body;
+				// Remove this property
+				delete this.body;
 
-			if (!this.rawBody)
-			{
-				this.body = "";
-			}
-			else
-			{
-				// Tranform markdown
-				g_markdownData = {
-					rootpath: options.contentPath,
-					fullpath: path.join(options.contentPath, filename),
-					url: url,
-					defaultSyntax: page.defaultSyntax,
-					remapLanguages: page.remapLanguages,
-					noHighlight: options.noHighlight === undefined ? false : options.noHighlight,
-				};
-				this.body = mdd.Transform(page.rawBody);
-				g_markdownData = null;
-			}
+				if (!this.rawBody)
+				{
+					this.body = "";
+				}
+				else
+				{
+					// Tranform markdown
+					g_markdownData = {
+						rootpath: options.contentPath,
+						fullpath: path.join(options.contentPath, filename),
+						url: url,
+						defaultSyntax: page.defaultSyntax,
+						remapLanguages: page.remapLanguages,
+						noHighlight: options.noHighlight === undefined ? false : options.noHighlight,
+					};
+					this.body = mdd.Transform(page.rawBody);
+					g_markdownData = null;
+				}
 
-			return this.body;
-		},
-		enumerable: true,
-		configurable: true,
-	});
+				return this.body;
+			},
+			enumerable: true,
+			configurable: true,
+		});
+	}
 
 	// Helper functions
 	page.qualifyUrl = page_qualifyUrl;
