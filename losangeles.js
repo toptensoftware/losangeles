@@ -7,19 +7,16 @@ var path = require('path');
 var yaml = require('js-yaml');
 var MarkdownDeep = require('markdowndeep');
 var readImageSize = require('image-size');
-var debug = require('debug')('pageServer');
-var debugRedirect = require('debug')('pageServer.redirect');
-var highlight = require('highlight.js');
+var debug = require('debug')('losangeles');
+var debugUrlRules = require('debug')('losangeles.urlRules');
 var got = require('got');
 var request = require('request');
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-// parsePage - read a .page file and parse the yaml/json off the top (async version)
-// 
-// This function parse a page file but don't handle imports or .common.page merging
+// Page loading
 
-// Helper to parse a page file and 
-async function parsePageAsync(filename) 
+// This function parses a page file but don't handle imports or .common.page merging
+async function parsePageFileAsync(filename) 
 {
 	// Read the file
 	var data = await util.promisify(fs.readFile)(filename, 'utf8');
@@ -89,39 +86,16 @@ async function parsePageAsync(filename)
 		page.rawBody = data;
 	}
 
-	// Split off the summary before "***"
-	if (page.rawBody)
-	{
-		var rx = /^\*\*\*$/m;
-
-		var match = page.rawBody.match(rx);
-		if (match)
-		{
-			page.summary = page.rawBody.substring(0, match.index);
-		}
-		else
-		{
-			page.summary = page.rawBody;
-		}
-	}
-	else
-	{
-		page.summary="";
-	}
-
 	return page;
 };
 
 
 
-/////////////////////////////////////////////////////////////////////////////////////////////////
-// readPageFileAsync - read a .page file and merge imports and .common.page
-
-// Load a page file and merge with imported base pages (async version)
-async function readPageFileAsync(options, filename)
+// Load a page file and merge with imported base pages
+async function loadPageFileAsync(options, filename)
 {
 	// Read and parse the file
-	var page = await parsePageAsync(filename);
+	var page = await parsePageFileAsync(filename);
 
 	var imports = []
 
@@ -174,7 +148,7 @@ async function readPageFileAsync(options, filename)
 			importFile = path.join(path.dirname(filename), importName);
 		}
 
-		var importedPage = await readPageFileAsync(options, importFile);
+		var importedPage = await loadPageFileAsync(options, importFile);
 
 		// Merge pages
 		if (i == 0)
@@ -189,9 +163,6 @@ async function readPageFileAsync(options, filename)
 	return mergedPage;
 }
 
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
-// mapUrlToFileAsync - given a URL, work out the page file that serves it
 
 async function mapUrlToFileAsync(options, url)
 {
@@ -232,35 +203,24 @@ async function mapUrlToFileAsync(options, url)
 }
 
 
-/////////////////////////////////////////////////////////////////////////////////////////////////
-// loadPageByUrlAsync - map url to file, load the file
-
-async function loadPageByUrlAsync(options, cache, url)
+async function loadPageAsync(options, url)
 {
+	// Cached?
+	if (options.$cache && options.$cache[url])
+	{
+		return options.$cache[url];
+	}
+
 	// Work out the file name
 	var filename;
 	[filename, url] = await mapUrlToFileAsync(options, url);
 
-	// Already loaded?
-	if (cache[url])
-		return cache[url];
-
 	// Read the page file
-	var page = await readPageFileAsync(options, path.join(options.contentPath, filename));
+	var page = await loadPageFileAsync(options, path.join(options.contentPath, filename));
 
-	// Cache it
-	cache[url] = page;
-
-	// Add adornments
-	return adornPageObject(page, options, url, filename);
-}
-
-
-function adornPageObject(page, options, url, filename)
-{
 	// Store the file and url loaded from
 	page.url = url;
-	page.file = filename;
+	page.filename = filename;
 
 	// Provide the default view as "page"
 	if (page.view === undefined)
@@ -306,7 +266,25 @@ function adornPageObject(page, options, url, filename)
 	}
 
 	// Helper functions
+	page.options = options;
 	page.qualifyUrl = page_qualifyUrl;
+	page.loadPageAsync = page_loadPageAsync;
+	page.getImageSize = page_getImageSize;
+
+	// Load external body?
+	if (page.externalBody)
+	{
+		var extBody = (await got(page.externalBody, { cache: false })).body;
+
+		if (!page.rawBody)
+			page.rawBody = extBody;
+		else
+			page.rawBody += "\n\n" + extBody;
+	}
+
+	// Cache it
+	if (options.$cache)
+		options.$cache[url] = page;
 
 	// Return the page
 	return page;
@@ -317,32 +295,16 @@ function page_qualifyUrl(url)
 	return resolveRelativeUrl(this.url, url);
 }
 
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
-// Root Page Load
-
-async function loadRootPage(options, url)
+async function page_loadPageAsync(url)
 {
-	// Load the page
-	var cache = {};
-	var page = await loadPageByUrlAsync(options, cache, url);
-
-	// Load external body?
-	if (page.externalBody && !page.$externalBodyFeteched)
-	{
-		var extBody = (await got(page.externalBody, { cache: false })).body;
-
-		if (!page.rawBody)
-			page.rawBody = extBody;
-		else
-			page.rawBody += "\n\n" + extBody;
-
-		page.$externalBodyFeteched = true;
-	}
-
-	return page;
+	return await loadPageAsync(this.options, resolveRelativeUrl(this.url, url));
 }
 
+function page_getImageSize(url)
+{
+	var filename = path.join(this.options.contentPath, resolveRelativeUrl(this.url, url));
+	return getImageSize(filename);
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 // Page Server
@@ -368,7 +330,7 @@ function pageServer(options, req, res, next)
 		try
 		{
 			// Load the page
-			var page = await loadRootPage(options, req.url);
+			var page = await loadPageAsync(options, req.url);
 
 			if (page.redirect)
 				res.redirect(page.redirect);
@@ -437,7 +399,7 @@ function urlRulesFilter(rules, req, res, next)
 		}
 
 		var newUrl = testUrl.replace(rx, rule.to);
-		debugRedirect("matching", testUrl, "vs", rx, "gives", newUrl);
+		debugUrlRules("matching", testUrl, "vs", rx, "gives", newUrl);
 		if (newUrl!==testUrl)
 		{
 			if (newUrl=="")
@@ -503,7 +465,7 @@ mdd.OnGetImageSize= function onGetImageSize(src)
 	}
 
 	// Get the image size
-	return getImageSizeHelper(src);
+	return getImageSize(src);
 };
 
 
@@ -523,59 +485,37 @@ function HtmlEncode(str)
 	});
 }
 
-mdd.FormatCodeBlockAttributes = function onFormatCodeBlock(opts)
+mdd.FormatCodeBlockAttributes = function onFormatCodeBlockAttributes(opts)
 {
-	if (g_markdownData.defaultSyntax == "disabled" || g_markdownData.noHighlight)
+	var language = opts.language || g_markdownData.defaultSyntax || "txt";
+
+	if (g_markdownData.remapLanguages && g_markdownData.remapLanguages[language])
 	{
-		var language = opts.language || g_markdownData.defaultSyntax || "txt";
-
-		if (g_markdownData.remapLanguages && g_markdownData.remapLanguages[language])
-		{
-			language = g_markdownData.remapLanguages[language];
-		}
-
-		return " class=\"language-" + language + "\"";
+		language = g_markdownData.remapLanguages[language];
 	}
-	else
-		return "";
+
+	return " class=\"language-" + language + "\"";
 }
 
 mdd.FormatCodeBlock = function onFormatCodeBlock(code, data, language)
 {
-	if (g_markdownData.defaultSyntax == "disabled" || g_markdownData.noHighlight)
-		return HtmlEncode(code);
-
-	var language = language ? language : g_markdownData.defaultSyntax;
-
-	if (!language)
-	{
-		return HtmlEncode(code);
-	}
-
-	switch (language)
-	{
-		case "c#":
-		case "C#":
-			language = "cs";
-			break;
-
-		case "c++":
-			language = "cpp";
-			break;
-	}
-
-	var result = highlight.highlight(language, code, true);
-	return result.value;
+	return HtmlEncode(code);
 }
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 // Image Size Helpers
 
-var g_imageSizeCache = {}
+var g_imageSizeCache = {};
 
-// Help to get (and cache) the size of an image
-function getImageSizeHelper(filename) {
+// Clear the image size cache
+function clearImageSizeCache()
+{
+	g_imageSizeCache = {};
+}
+
+// Helper to get (and cache) the size of an image
+function getImageSize(filename) {
 
 	// Look up cache
 	if (g_imageSizeCache)
@@ -593,7 +533,7 @@ function getImageSizeHelper(filename) {
 		imageSize = readImageSize(filename);
 
 		// Adjust for retina images
-		if (filename.substr(-7).toLowerCase()=="@2x.png")
+		if (filename.substr(-7,3).toLowerCase()=="@2x")
 		{
 			imageSize.width /= 2;
 			imageSize.height /= 2;
@@ -694,6 +634,14 @@ function resolveRelativeUrl(base, url)
 
 module.exports = 
 {
+	parsePageFileAsync: parsePageFileAsync,
+	loadPageFileAsync: loadPageFileAsync,
+	mapUrlToFileAsync: mapUrlToFileAsync,
+	loadPageAsync: loadPageAsync,
+	resolveRelativeUrl: resolveRelativeUrl,
+	clearImageSizeCache: clearImageSizeCache,
+	getImageSize: getImageSize,
+	
 	serve: function(options)
 	{
 		// Resolve whether to cache or not
@@ -704,17 +652,21 @@ module.exports =
 
 		debug(options.cache ? "Cache Enabled" : "Cache Disabled");
 
-		var middleware =  function(req, res, next)
-		{
-			pageServer(options, req, res, next);
+		return {
+			middleware: function(req, res, next)
+			{
+				pageServerMiddleware(options, req, res, next);
+			},
+			loadPageAsync: async function(url)
+			{
+				return await loadPageAsync(options, url);
+			},
+			clearCache: function()
+			{
+				options.$cache = {};
+				clearImageSizeCache();
+			}
 		}
-
-		middleware.loadPageAsync = async function(url)
-		{
-			return await loadRootPage(options, url);
-		}
-
-		return middleware;
 	},
 
 	urlRules: function(rules)

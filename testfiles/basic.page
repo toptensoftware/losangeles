@@ -1,0 +1,7 @@
+---
+prop1: "Hello World"
+prop2: 23
+prop3: true
+import: "imported.page"
+---
+# Heading 1

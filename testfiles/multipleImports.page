@@ -1,0 +1,6 @@
+---
+import: 
+    - "imported.page"
+    - "imported2.page"
+---
+Body Text
