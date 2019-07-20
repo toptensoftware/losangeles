@@ -1,0 +1,12 @@
+---
+projectTitle: losangeles
+projectSubTitle: "v1.0.2"
+projectUrlPrefix: /losangeles/
+prismLanguages:
+  - javascript
+  - markup
+navTree:
+  - text: Los Angeles
+    subItems:
+      - text: Overview|.
+---
