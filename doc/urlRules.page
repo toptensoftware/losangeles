@@ -23,7 +23,7 @@ app.use(la.urlRules([
 
 ## Configuring Rules
 
-The `urlRules()` method expects an array of rules that should be processed.
+The `urlRules()`  method expects an array of rules that should be processed.
 
 Each entry in the array is a JavaScript object with either a `redirect`, `rewrite`
 or `proxy` field declaring a regular expression to match against the URL and a `to` 
