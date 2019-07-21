@@ -1,0 +1,52 @@
+---
+title: URL Rules
+---
+# URL Rules
+
+In addition to the page server features, Los Angeles includes a simple URL rewrite,
+redirect and proxy feature.
+
+## Setup
+
+To setup the URL mapping use the `urlRules()` method of the Los Angeles component which 
+returns an Express middleware:
+
+~~~javascript
+// Load LosAngeles
+const la  = require('@toptensoftware/losangeles');
+
+// Run redirect rules
+app.use(la.urlRules([
+    // redirect rules go here (see below)
+]));
+~~~
+
+## Configuring Rules
+
+The `urlRules()` method expects an array of rules that should be processed.
+
+Each entry in the array is a JavaScript object with either a `redirect`, `rewrite`
+or `proxy` field declaring a regular expression to match against the URL and a `to` 
+property specifying where the URL should be remapped:
+
+~~~javascript
+[
+    // Redirect
+    { 
+        redirect: /^\/downloads\/(.*)$/i, 
+        to: "http://static.mysite.com/$1" 
+    },
+
+    // Rewrite 
+    { 
+        rewrite: /^\/downloads\/(.*)$/i, 
+        to: "/newblog/$1" 
+    },
+
+    // proxy
+    { 
+        proxy: /^\/myproduct\/releasenotes.json/i, 
+        to: "http://static.mysite.com/myproduct-releaseNotes.json" 
+    }
+]
+~~~

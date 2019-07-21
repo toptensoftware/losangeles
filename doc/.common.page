@@ -1,12 +1,24 @@
 ---
-projectTitle: losangeles
+projectTitle: "Los Angeles"
 projectSubTitle: "v1.0.2"
 projectUrlPrefix: /losangeles/
 prismLanguages:
   - javascript
   - markup
+  - markdown
+  - json
+  - hbs
 navTree:
   - text: Los Angeles
     subItems:
       - text: Overview|.
+      - text: Installation|install
+      - text: Express Integration|express
+      - text: Page File Format|pageFormat
+      - text: Page Adornments|pageAdornments
+      - text: Special Front-Matter Properties|specialProperties
+      - text: Page Server Options|options
+      - text: Imports and .common.page|imports
+      - text: URL Rules|urlRules
+      - text: License|license
 ---

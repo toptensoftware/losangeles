@@ -1,0 +1,72 @@
+---
+title: Page Adornments
+---
+# Page Adornments
+
+Aside from the parsed YAML front-matter, a .page file loaded by Los Angeles is
+adorned with the following properties and methods.
+
+## rawBody Property
+
+The `rawBody` property contains the original raw text of the main body of the 
+.page file.
+
+ie: everything after the front-matter.
+
+## body Property
+
+The `body` property returns the `rawBody` transformed from Markdown to HTML.
+
+This property is implemented as a dynamic property and the Markdown transformation
+is performed the first time the `body` property is accessed.
+
+If the YAML front-matter includes the property `isMarkdown:false`, the `body`
+property will return the `rawBody` and no Markdown transformation is performed.
+
+## url Property
+
+The `url` property contains the URL that this page was loaded through.
+
+## filename Property
+
+The `filename` property holds the file this page was loaded through, relative to 
+the `contentPath` of the page server's `options`.
+
+## view Property
+
+This property comes from the front-matter, but if not specified defaults to "page"
+and is used to specify which Express view should be used to render the page.
+
+The loaded and parsed page, including all adornmnents is passed as the data (or model)
+to the selected view.
+
+## options Property
+
+A reference to the `options` object used to configure the page server that loaded this page.
+
+## qualifyUrl(url) Method
+
+Qualifies a URL, relative to the URL this page was loaded through.
+
+## loadPageAsync(url) Method
+
+Loads a page with URL relative to URL of this page.  
+
+This is an `async` method and should be called using the JavaScript `await` method:
+
+~~~javascript
+var otherPage = await page.loadPageAsync("otherPage");
+~~~
+
+## getImageSize(url) Method
+
+Gets the size of an image with a URL relative to this page.  The returned value is a 
+JavaScript object with the following properties:
+
+~~~json
+{
+    width: 1020,            // Width of the image
+    height: 364,            // Height of the image
+    type: "png",            // The image extension
+}
+~~~

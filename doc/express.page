@@ -1,0 +1,68 @@
+---
+title: Express Integration
+---
+# Express Integration
+
+The primary way of using Los Angeles is as an Express middleware and usually it
+will be used in combination with Express' static file server
+
+```javascript
+// Load LosAngeles
+const la  = require('@toptensoftware/losangeles');
+
+// Work out public file root
+var publicRoot = path.join(__dirname, 'public');
+
+// Serve static files
+app.use(express.static(publicRoot));
+
+// Serve Los Angeles .page files
+app.use(la.serve({
+    contentPath: publicRoot
+}).middleware)
+```
+
+## Creating a View
+
+In addition to the above you should also create a view file called "page".  
+
+For example, if you're using Handlebars as your view engine, you should 
+create a view file called `page.hbs` similar to the following:
+
+~~~
+<h1>{{title}}</h1>
+
+<article>
+{{{body}}}
+</article>
+~~~
+
+This will render the page using the `title` and `body` properties from the loaded .page 
+file, followed by the usual Handlebars process of rendering the inner page using the
+outer `layout.hbs` file.
+
+By default page's are rendered using a view called "page", but each page file can specify
+a different view file by including a `page` property in the page's front-matter.  Similarly
+you can override the layout used by setting a `layout` property (well typically anyway - this
+depends on the view engine you're using).
+
+For a great view engine to use with Los Angeles, check out [Moe-js](/moe-js).
+
+## Creating Pages
+
+Now that you've got all that setup, you can create pages in your public content folder
+and Los Angeles will automatically transform the markdown, render the view and the layout
+to produce the final page.
+
+For example, create the following page as `/public/test.page`
+
+~~~markdown
+---
+title: My Test Page
+---
+# Welcome to Los Angeles
+
+This is my test page
+~~~
+
+With your server project running visit `http://localhost:3000/test` to see your page.

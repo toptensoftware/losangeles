@@ -1,0 +1,28 @@
+---
+title: .page File Format
+---
+
+# Page File Format
+
+Los Angeles .page files are simple text files that consist of a YAML front-matter
+delimited by three hyphens before and after, followed by a plain text (typically
+Markdown) body.
+
+For example:
+
+~~~
+---
+title: This is the YAML front matter
+---
+# This is a markdown heading
+
+This is a markdown paragraph etc...
+~~~
+
+
+The front matter is optional, but is typically used to provide additional metadata
+about the page that can be used by the view/layout rendering framework.
+
+When Los Angeles loads a .page file, it combines the YAML front-matter properties,
+the plain text body into a single JavaScript object.  It then adorns that object
+with additional methods and properties as [described here](pageAdornments).

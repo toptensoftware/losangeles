@@ -1,0 +1,25 @@
+---
+title: Installation
+---
+
+# Installation
+
+Install Los Angeles via npm:
+
+```
+npm install --save @toptensoftware/losangeles
+```
+
+and import it as follows:
+
+```javascript
+const la = require('@toptensoftware/losangeles');
+```
+
+## Source Repository
+
+You can also get Los Angeles directly from the public Git repository:
+
+* <https://github.com/toptensoftware/losangeles>
+
+

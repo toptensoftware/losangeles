@@ -1,0 +1,81 @@
+---
+title: Special Front-Matter Properties
+---
+# Special Front-Matter Properties
+
+Some front-matter properties are considered special in that they control
+Los Angeles' behaviour.
+
+## view Property
+
+The `view` property declares which Express view will be used to render the page.
+If not specified, this property defaults to "page".
+
+## layout Property
+
+Although not explicitly handled by Los Angeles, some view engines (including
+Handlebars and [Moe-js](/moe-js/)) use the `layout` property to specify the outer 
+layout view into which the inner view should be rendered.
+
+## externalBody Property
+
+The `externalBody` property can be used to specify the URL of an external resource
+that will be requested and appended to the end of the `rawBody`.
+
+This provides an easy way to pull in content from other sources - eg: include the 
+readme file of a git repository in your site.
+
+## redirect Property
+
+The `redirect` property causes this page to redirect to a different URL.
+
+## isMarkdown Property
+
+Setting this property to `false` disables the Markdown transformation of the page's
+body, causing the `body` property to return the same value as the `rawBody` property.
+
+## import Property
+
+Specifies other .page files that this page should be merged over. This
+property can be either a single filename, or an array of other files that will be 
+merged in sequence.
+
+eg: importing a single page:
+
+~~~
+import: myCommonSettings.page
+~~~
+
+
+eg: importing multiple pages:
+
+~~~
+import: 
+  - myCommonSettings.page
+  - myOtherCommonSettings.page
+~~~
+
+See [Imports and .commonPage](imports) for more.
+
+## defaultSyntax Property
+
+If specified, sets the default language for any Markdown code blocks that don't have
+an explicit language specifier.
+
+eg:
+
+```Markdown
+---
+defaultSyntax: javascript
+---
+# Heading
+
+~~~
+// This code block will get class="language-javascript"
+~~~
+
+~~~csharp
+// This code block will get class="language-csharp"
+~~~
+
+```

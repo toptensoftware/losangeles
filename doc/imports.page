@@ -1,0 +1,43 @@
+---
+title: Imports and .common.page
+---
+
+# Imports and .common.page
+
+Los Angeles provides two ways to declare common front-matter properties for
+a set of pages:
+
+## .common.page
+
+Often it will be desirable to have a set of front-matter properties that are
+common to every page in a folder.  These properties can be declared in the special
+file `.common.page`.
+
+When a .page file is loaded, if a .common.page file exists in the same folder it
+is loaded first and the page being loaded is merged over the settings from .common.page.
+
+eg: suppose you had a .common.page file like so...
+
+~~~
+---
+projectName: "My Project"
+---
+~~~
+
+... then every other .page file in that folder will also inherit the `projectName` setting
+(unless it is overridden by a new setting in any of the page files).
+
+## Imports
+
+Besides this automatic importing of the .common.page file you can also explicitly import
+other .page files with the `import` front-matter property in a page.  [See here](specialProperties#import-property).
+
+The import property can also be used to import the .common.page file from a parent directory:
+
+~~~
+---
+import: ../.common.page
+---
+~~~
+
+

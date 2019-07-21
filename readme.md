@@ -51,9 +51,16 @@ Note:
 * The `filename` and `url` properties are based on where the page was loaded from
 * The `view` property defaults to "page" unless explicitly set in the front matter.
 
-Los Angeles provides API to load pages directly, but also includes an Express
-middleware that then renders pages via Express view engine framework.
+Los Angeles includes an Express middleware that loads pages with the above format and then
+renders them via Express view engine framework.
 
+
+## "Los Angeles"?
+
+The name of this project comes from a personal habit of naming Node 
+projects after songs by synth-wave bands.  This project is named after
+the song [Los Angeles](https://open.spotify.com/track/4loXMor75kKVBB03ygwDlh?si=Iggn6ILiQ1aYe8TXoxWfyg)
+by [The Midnight](https://www.themidnightofficial.com).
 
 ## Documentation
 
