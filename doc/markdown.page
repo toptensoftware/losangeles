@@ -1,0 +1,98 @@
+---
+title: Markdown Support
+---
+
+# Markdown Support
+
+This section explains some conventions used by Los Angeles in the conversion
+of Markdown to HTML.
+
+## Heading IDs
+
+When converting headings from Markdown to HTML, the final heading element will
+include an `id` attribute synthesized from the heading text:
+
+~~~markdown
+# My Heading
+~~~
+
+results in:
+
+~~~html
+<h1 id="my-heading">My Heading</h1>
+~~~
+
+## Code Block Syntax Language
+
+When converting Markdown fenced code blocks, the language attribute is included
+as a class of `language-xxx` where xxx is the specified language.
+
+eg:
+
+```markdown
+~~~javascript
+let x = 23;
+~~~
+```
+
+would be converted as follows:
+
+```html
+<pre class="language-javascript"><code>let x = 23;
+</code></pre>
+```
+
+The can be used in combination with client side syntax highlighting libraries like
+PrismJS to syntax highlight embedded code blocks.   
+
+
+## Single Image Paragraphs
+
+When an image is the only content in a paragraph the rendered HTML will include
+an enclosing `div` with the class `figure` that can be used to explicitly
+style these kinds of images:
+
+eg:
+
+~~~markdown
+![MyImage](MyImage.png)
+~~~
+
+would be rendered as HTML similar to the following:
+
+~~~html
+<div class="figure">
+    <img src="MyImage.png" width="2040" height="728" />
+</div>
+~~~
+
+
+## Image Size Support
+
+Note in the above example how the size of the image is included in the `img`
+element.  
+
+This only works for local files that can be discovered in the same content path
+as the page being generated.
+
+
+## Hi-DPI Images
+
+If an image is intended as a hi-dpi (aka Retina) image and you can indicate this by
+using the convention of appending "@2x" to the file name. 
+
+(Obviously you'll need to rename the actual image file as well).
+
+~~~markdown
+![MyImage](MyImage@2x.png)
+~~~
+
+For image file names in this format, Los Angeles will automatically halve the image
+dimensions, reflecting the indended display size:
+
+~~~html
+<div class="figure">
+    <img src="MyImage@2x.png" width="1020" height="364" />
+</div>
+~~~
+

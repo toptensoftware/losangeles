@@ -20,7 +20,7 @@ rendered via Express' view engine.
 * Automatic image size calculation (including retina support)
 * Caching of loaded pages
 
-## "Los Angeles"?
+## Why is it called "Los Angeles"?
 
 The name of this project comes from a personal habit of naming Node 
 projects after songs by synth-wave bands.  This project is named after

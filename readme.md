@@ -55,7 +55,7 @@ Los Angeles includes an Express middleware that loads pages with the above forma
 renders them via Express view engine framework.
 
 
-## "Los Angeles"?
+## Why is it called "Los Angeles"?
 
 The name of this project comes from a personal habit of naming Node 
 projects after songs by synth-wave bands.  This project is named after

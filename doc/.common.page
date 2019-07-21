@@ -19,6 +19,7 @@ navTree:
       - text: Special Front-Matter Properties|specialProperties
       - text: Page Server Options|options
       - text: Imports and .common.page|imports
+      - text: Markdown Support|markdown
       - text: URL Rules|urlRules
       - text: License|license
 ---

@@ -7,12 +7,12 @@ title: Page Server Options
 When creating a Los Angeles page server, you pass it an "options" object that
 controls certain aspects of its behaviour:
 
-```
+~~~javascript
 // Serve Los Angeles .page files
 app.use(la.serve({
     contentPath: publicRoot
 }).middleware)
-```
+~~~
 
 The following describes these options.
 
@@ -36,7 +36,7 @@ into memory).
 
 To clear the cache, use the `clearCache()` method of the returned page server object:
 
-```javascript
+~~~javascript
 // Create page server
 var pageServer = la.server({ 
     contentPath: path.join(__dirname, 'public'),
@@ -52,4 +52,4 @@ app.use(pageServer.middleware)
 
 // Somewhere else, perhaps on a scheduled task, clear the cache:
 pageServer.clearCache();
-```
+~~~
