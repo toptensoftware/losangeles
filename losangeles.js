@@ -309,7 +309,7 @@ function page_getImageSize(url)
 /////////////////////////////////////////////////////////////////////////////////////////////////
 // Page Server
 
-function pageServer(options, req, res, next)
+function pageServerMiddleware(options, req, res, next)
 {
 	// Only interested in get methods
 	if (req.method.toLowerCase() != 'get')
