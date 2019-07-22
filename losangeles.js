@@ -340,12 +340,9 @@ function pageServerMiddleware(options, req, res, next)
 		catch (err)
 		{
 			// Convert missing page errors to 404s
-			if (err.code == "ENOENT")
-			{	
-				err = new Error('Page Not Found');
-				err.status = 404;
-			}
-			throw err;
+			if (err.code != "ENOENT")
+				throw err;
+			next();
 		}
 	
 	}()).catch(next);
