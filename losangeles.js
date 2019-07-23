@@ -95,6 +95,8 @@ async function parsePageFileAsync(filename)
 // Load a page file and merge with imported base pages
 async function loadPageFileAsync(options, filename)
 {
+	debug(`Loading file ${filename}...`);
+
 	// Read and parse the file
 	var page = await parsePageFileAsync(filename);
 
@@ -203,16 +205,6 @@ async function mapUrlToFileAsync(options, url)
 	return [file, url];
 }
 
-function cachePage(options, page)
-{
-	if (options.$cache)
-	{
-		options.$cache.set(page.url, page);
-	}
-	return page;
-}
-
-
 async function loadPageAsync(options, url)
 {
 	// Cached?
@@ -220,7 +212,10 @@ async function loadPageAsync(options, url)
 	{
 		var page = options.$cache.get(url);
 		if (page)
+		{
+			debug(`Page '${page.url}' found in cache.`);
 			return page;
+		}
 	}
 
 	// Work out the file name
@@ -295,7 +290,13 @@ async function loadPageAsync(options, url)
 	}
 
 	// Return the page
-	return cachePage(options, page);
+	if (options.$cache)
+	{
+		options.$cache.set(page.url, page);
+		debug(`Cached page '${page.url}'.`);
+	}
+
+	return page;
 }
 
 function page_qualifyUrl(url)
@@ -675,6 +676,7 @@ module.exports =
 				if (options.$cache)
 					options.$cache.reset();
 				clearImageSizeCache();
+				debug("Cache cleared.")
 			}
 		}
 	},

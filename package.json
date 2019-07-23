@@ -1,6 +1,6 @@
 {
  "name": "@toptensoftware/losangeles",
- "version": "0.3.3",
+ "version": "0.3.4",
  "description": "Simple page content server",
  "main": "losangeles.js",
  "author": "Topten Software",
