@@ -11,6 +11,7 @@ var debug = require('debug')('losangeles');
 var debugUrlRules = require('debug')('losangeles.urlRules');
 var got = require('got');
 var request = require('request');
+var lru = require('lru-cache');
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 // Page loading
@@ -202,13 +203,24 @@ async function mapUrlToFileAsync(options, url)
 	return [file, url];
 }
 
+function cachePage(options, page)
+{
+	if (options.$cache)
+	{
+		options.$cache.set(page.url, page);
+	}
+	return page;
+}
+
 
 async function loadPageAsync(options, url)
 {
 	// Cached?
-	if (options.$cache && options.$cache[url])
+	if (options.$cache)
 	{
-		return options.$cache[url];
+		var page = options.$cache.get(url);
+		if (page)
+			return page;
 	}
 
 	// Work out the file name
@@ -282,12 +294,8 @@ async function loadPageAsync(options, url)
 			page.rawBody += "\n\n" + extBody;
 	}
 
-	// Cache it
-	if (options.$cache)
-		options.$cache[url] = page;
-
 	// Return the page
-	return page;
+	return cachePage(options, page);
 }
 
 function page_qualifyUrl(url)
@@ -645,9 +653,13 @@ module.exports =
 		if (options.cache === undefined)
 			options.cache = process.env.NODE_ENV == 'production';
 		if (options.cache)
-			options.$cache = {};
+		{
+			if (!options.cacheMaxPages)
+				options.cacheMaxPages = 50;
+			options.$cache = new lru(options.cacheMaxPages);
+		}
 
-		debug(options.cache ? "Cache Enabled" : "Cache Disabled");
+		debug(options.cache ? `Cache Enabled (max ${options.cacheMaxPages} pages)` : "Cache Disabled");
 
 		return {
 			middleware: function(req, res, next)
@@ -660,7 +672,8 @@ module.exports =
 			},
 			clearCache: function()
 			{
-				options.$cache = {};
+				if (options.$cache)
+					options.$cache.reset();
 				clearImageSizeCache();
 			}
 		}

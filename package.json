@@ -1,19 +1,19 @@
 {
  "name": "@toptensoftware/losangeles",
- "version": "0.3.2",
+ "version": "0.3.3",
  "description": "Simple page content server",
  "main": "losangeles.js",
  "author": "Topten Software",
- "license": "Apache",
+ "license": "Apache-2.0",
  "repository": {
-     "type": "git",
-     "url": "https://github.com/toptensoftware/losangeles"
+  "type": "git",
+  "url": "https://github.com/toptensoftware/losangeles"
  },
  "homepage": "http://www.toptensoftware.com/losangeles",
  "keywords": [
-     "express",
-     "markdown",
-     "pages"
+  "express",
+  "markdown",
+  "pages"
  ],
  "scripts": {
   "test": "node_modules/.bin/jest"
@@ -23,6 +23,7 @@
   "got": "^8.3.1",
   "image-size": "^0.6.3",
   "js-yaml": "^3.13.1",
+  "lru-cache": "^5.1.1",
   "markdowndeep": "^1.6.12",
   "request": "^2.88.0"
  },

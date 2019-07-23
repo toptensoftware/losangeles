@@ -30,10 +30,6 @@ This optional boolean property controls whether loaded .page files are cached.
 If not specified, caching is enabled in production environments and disabled
 in development environments.
 
-The cache is a simple ever accumulating cache.  It never flushes itself and shouldn't
-be blindly used on large content directories (as every page will eventually be loaded 
-into memory).
-
 To clear the cache, use the `clearCache()` method of the returned page server object:
 
 ~~~javascript
@@ -53,3 +49,8 @@ app.use(pageServer.middleware)
 // Somewhere else, perhaps on a scheduled task, clear the cache:
 pageServer.clearCache();
 ~~~
+
+## cacheMaxPages property
+
+Sets the maximum number of pages to be cached.  Least recently used pages are
+removed first.  If not specified, the default value of this property is 50.
