@@ -1,6 +1,9 @@
 ---
+title: "Los Angeles"
+subtitle: "a simple page content server for Node/Express."
+banner: banner.png
+projectTitle: "Los Angeles"
 ---
-
 <div class="banner" markdown=1>
 ![Banner](banner@2x.png)
 </div>
