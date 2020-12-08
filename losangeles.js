@@ -341,6 +341,8 @@ function pageServerMiddleware(options, req, res, next)
 			// Load the page
 			var page = await loadPageAsync(options, req.url);
 
+			page.originalUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
+
 			if (page.redirect)
 				res.redirect(page.redirect);
 			else
