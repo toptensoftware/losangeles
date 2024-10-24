@@ -1,17 +1,21 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 // losangeles.js - simple markdown page server
 
-var fs = require('fs');
-var util = require('util');
-var path = require('path');
+var fs = require('node:fs');
+var util = require('node:util');
+var path = require('node:path');
+var url = require('node:url');
+
 var yaml = require('js-yaml');
 var MarkdownDeep = require('markdowndeep');
 var readImageSize = require('image-size');
 var debug = require('debug')('losangeles');
 var debugUrlRules = require('debug')('losangeles.urlRules');
-var got = require('got');
 var request = require('request');
 var lru = require('lru-cache');
+
+var fetch = null;
+
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 // Page loading
@@ -166,17 +170,38 @@ async function loadPageFileAsync(options, filename)
 	return mergedPage;
 }
 
+async function stat_safe(filename)
+{
+	try
+	{
+		return await util.promisify(fs.stat)(filename);
+	}
+	catch (x)
+	{
+		return null;
+	}
+}
 
 async function mapUrlToFileAsync(options, url)
 {
 	// Is it a directory or file?
-	var stats;
-	try
+	var stats = await stat_safe(path.join(options.contentPath, url));
+
+	// Look for a single-page-app root
+	if (!stats)
 	{
-		stats = await util.promisify(fs.stat)(path.join(options.contentPath, url));
-	}
-	catch (x)
-	{
+		let u = url;
+		while (u.length > 1)
+		{
+			u = path.dirname(u);
+			stats = await stat_safe(path.join(options.contentPath, u, ".spaRoot"));
+			if (stats)
+			{
+				url = u;
+				stats = await stat_safe(path.join(options.contentPath, u));
+				break;
+			}
+		}
 	}
 
 	var isDirectory = stats && stats.isDirectory();
@@ -278,10 +303,21 @@ async function loadPageAsync(options, url)
 	page.loadPageAsync = page_loadPageAsync;
 	page.getImageSize = page_getImageSize;
 
+	if (page.rewrite)
+	{
+		page.rewrite = new URL(page.rewrite, "http://x" + path.dirname(page.filename) + "/").pathname;
+	}
+
 	// Load external body?
 	if (page.externalBody)
 	{
-		var extBody = (await got(page.externalBody, { cache: false })).body;
+		if (!fetch)
+			fetch = (await import('node-fetch')).default;
+
+		let response = await fetch(page.externalBody);
+		if (!response.ok)
+			throw new Error(`Failed to fetch external body: ${response.status} - ${response.statusText}`);
+		var extBody = await response.text();
 
 		if (!page.rawBody)
 			page.rawBody = extBody;
@@ -344,7 +380,14 @@ function pageServerMiddleware(options, req, res, next)
 			page.originalUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
 
 			if (page.redirect)
+			{
 				res.redirect(page.redirect);
+			}
+			else if (page.rewrite)
+			{
+				res.url = page.rewrite;
+				next();
+			}
 			else
 				res.render(page.view, page);
 		}
