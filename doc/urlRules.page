@@ -50,3 +50,38 @@ property specifying where the URL should be remapped:
     }
 ]
 ~~~
+
+## Unless Exists Rules
+
+To create a rule that only takes effect if a file doesn't exist, add an `unless` property.
+
+These can be used to create fallback's for statically hosted single page apps.
+
+When present the redirect/rewrite will take effect if the file indicated by `unless`
+doesn't exist.  Use `$n` for captured matches in the orginal URL.
+
+eg: the following rule will redirect a URL like `/someapp/somepath/tail` to 
+`/someapp/index.html`... unless the file at `/someapp/somepath/tail` exists.
+
+
+```javascript
+[
+    // SPA rewrite
+    {
+        rewrite: /^\/someapp\/(.*)$/,
+        to: "/someapp/index.html",
+        unless: "./someapp/$1",
+    },
+]
+```
+
+If the resulting `unless` file is a relative path it will be resolved against the path
+given by `baseDir` in the options object passed as the second parameter to the `urlRules`
+function.
+
+```javascript
+// Redirect rules with a base directory for resolving `unless` redirect/rewrites.
+app.use(la.urlRules(require('./redirects'), {
+    baseDir: path.join(__basedir, "public),
+}));
+```

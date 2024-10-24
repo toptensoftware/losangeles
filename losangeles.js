@@ -385,7 +385,7 @@ function pageServerMiddleware(options, req, res, next)
 			}
 			else if (page.rewrite)
 			{
-				res.url = page.rewrite;
+				req.url = page.rewrite;
 				next();
 			}
 			else
@@ -425,60 +425,78 @@ function pageServerMiddleware(options, req, res, next)
  * ]
  */
 
-function urlRulesFilter(rules, req, res, next)
+async function urlRulesFilter(rules, options, req, res, next)
 {
-	if (!rules)
+	console.log(req.url);
+	try
 	{
-		next();
-		return;
-	}
-
-	for (var i=0; i<rules.length; i++)
-	{
-		var rule = rules[i];
-
-		var rx = rule.redirect || rule.rewrite || rule.proxy;
-
-		// If the rule contains "://" also include the protocol and hostname is the test string
-		if (rule.redirect && rx.toString().indexOf(":\\/\\/")>=0)
+		if (!rules)
 		{
-			testUrl = req.protocol + "://" + req.headers.host + req.url;
-		}
-		else
-		{
-			testUrl = req.url;
+			next();
+			return;
 		}
 
-		var newUrl = testUrl.replace(rx, rule.to);
-		debugUrlRules("matching", testUrl, "vs", rx, "gives", newUrl);
-		if (newUrl!==testUrl)
+		for (var i=0; i<rules.length; i++)
 		{
-			if (newUrl=="")
+			var rule = rules[i];
+
+			var rx = rule.redirect || rule.rewrite || rule.proxy;
+
+			// If the rule contains "://" also include the protocol and hostname is the test string
+			if (rule.redirect && rx.toString().indexOf(":\\/\\/")>=0)
 			{
-				var err = new Error('Not Found');
-				err.status = 404;
-				next(err);
-				return;
+				testUrl = req.protocol + "://" + req.headers.host + req.url;
 			}
 			else
 			{
-				if (rule.redirect)
+				testUrl = req.url;
+			}
+
+			var newUrl = testUrl.replace(rx, rule.to);
+			debugUrlRules("matching", testUrl, "vs", rx, "gives", newUrl);
+			if (newUrl !== testUrl)
+			{
+				if (rule.unless)
 				{
-					res.redirect(newUrl);
-					return;
-				}
-				else if (rule.proxy)
-				{
-					request(newUrl).pipe(res);
-					return;
+					let m = testUrl.match(rx, rule.to);
+					let testFile = path.join(options.baseDir, rule.unless.replace(/\$(\d+)/g, (repl) => {
+						return m[parseInt(repl[1])];
+					}));
+					if (await stat_safe(testFile))
+						return next();
 				}
 
-				req.url = newUrl;
-				break;
+				if (newUrl=="")
+				{
+					var err = new Error('Not Found');
+					err.status = 404;
+					next(err);
+					return;
+				}
+				else
+				{
+					if (rule.redirect)
+					{
+						res.redirect(newUrl);
+						return;
+					}
+					else if (rule.proxy)
+					{
+						request(newUrl).pipe(res);
+						return;
+					}
+
+					req.url = newUrl;
+					break;
+				}
 			}
 		}
+		next();
 	}
-	next();
+	catch
+	{
+		next();
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -726,11 +744,11 @@ module.exports =
 		}
 	},
 
-	urlRules: function(rules)
+	urlRules: function(rules, options)
 	{
 		return function(req, res, next)
 		{
-			urlRulesFilter(rules, req, res, next);
+			urlRulesFilter(rules, options, req, res, next);
 		}
 	},
 
