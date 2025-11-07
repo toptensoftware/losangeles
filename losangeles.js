@@ -11,7 +11,6 @@ var MarkdownDeep = require('markdowndeep');
 var readImageSize = require('image-size');
 var debug = require('debug')('losangeles');
 var debugUrlRules = require('debug')('losangeles.urlRules');
-var request = require('request');
 var lru = require('lru-cache');
 
 var fetch = null;
@@ -311,9 +310,6 @@ async function loadPageAsync(options, url)
 	// Load external body?
 	if (page.externalBody)
 	{
-		if (!fetch)
-			fetch = (await import('node-fetch')).default;
-
 		let response = await fetch(page.externalBody);
 		if (!response.ok)
 			throw new Error(`Failed to fetch external body: ${response.status} - ${response.statusText}`);
@@ -482,7 +478,20 @@ async function urlRulesFilter(rules, options, req, res, next)
 					}
 					else if (rule.proxy)
 					{
-						request(newUrl).pipe(res);
+						// Make remote request
+						let fr = await fetch(newUrl);
+
+		    			// Forward status and response headers
+						res.status(response.status);
+						fr.headers.forEach((value, key) => {
+							res.setHeader(key, value);
+						});
+
+					    // Pipe the body as a stream
+						if (fr.body)
+							fr.body.pipe(res);
+						else
+							res.end();
 						return;
 					}
 
