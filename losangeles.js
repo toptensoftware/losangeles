@@ -11,7 +11,7 @@ var MarkdownDeep = require('markdowndeep');
 var readImageSize = require('image-size');
 var debug = require('debug')('losangeles');
 var debugUrlRules = require('debug')('losangeles.urlRules');
-var lru = require('lru-cache');
+var { LRUCache } = require('lru-cache');
 
 var fetch = null;
 
@@ -729,7 +729,9 @@ module.exports =
 		{
 			if (!options.cacheMaxPages)
 				options.cacheMaxPages = 50;
-			options.$cache = new lru(options.cacheMaxPages);
+			options.$cache = new LRUCache({
+				max: options.cacheMaxPages
+			});
 		}
 
 		debug(options.cache ? `Cache Enabled (max ${options.cacheMaxPages} pages)` : "Cache Disabled");
