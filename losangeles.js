@@ -423,7 +423,6 @@ function pageServerMiddleware(options, req, res, next)
 
 async function urlRulesFilter(rules, options, req, res, next)
 {
-	console.log(req.url);
 	try
 	{
 		if (!rules)
