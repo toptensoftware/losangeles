@@ -5,6 +5,7 @@ var fs = require('node:fs');
 var util = require('node:util');
 var path = require('node:path');
 var url = require('node:url');
+const { Readable } = require('stream');
 
 var yaml = require('js-yaml');
 var MarkdownDeep = require('markdowndeep');
@@ -13,7 +14,7 @@ var debug = require('debug')('losangeles');
 var debugUrlRules = require('debug')('losangeles.urlRules');
 var { LRUCache } = require('lru-cache');
 
-var fetch = null;
+
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -477,20 +478,42 @@ async function urlRulesFilter(rules, options, req, res, next)
 					}
 					else if (rule.proxy)
 					{
-						// Make remote request
-						let fr = await fetch(newUrl);
+						try
+						{
+							const response = await fetch(newUrl);
 
-		    			// Forward status and response headers
-						res.status(response.status);
-						fr.headers.forEach((value, key) => {
-							res.setHeader(key, value);
-						});
+							// Forward status
+							res.status(response.status);
 
-					    // Pipe the body as a stream
-						if (fr.body)
-							fr.body.pipe(res);
-						else
-							res.end();
+							// Forward headers, skipping hop-by-hop ones Node/Express manage itself
+							const skipHeaders = new Set([
+								'content-length',
+								'content-encoding',   // fetch already decompresses the body
+								'transfer-encoding',  // Express will set its own if needed
+								'connection',
+								'keep-alive',
+							]);
+							for (const [key, value] of response.headers) {
+								if (!skipHeaders.has(key.toLowerCase())) {
+									res.setHeader(key, value);
+							}
+							}
+
+							// Stream the body straight through instead of buffering it
+							if (response.body) 
+							{
+								Readable.fromWeb(response.body).pipe(res);
+							} 
+							else 
+							{
+								res.end();
+							}
+						} 
+						catch (err) 
+						{
+							res.status(502).json({ error: 'Bad gateway', details: err.message });
+						}
+						
 						return;
 					}
 
@@ -501,7 +524,7 @@ async function urlRulesFilter(rules, options, req, res, next)
 		}
 		next();
 	}
-	catch
+	catch (err)
 	{
 		next();
 	}
